@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebGIS Map</title>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/5.1/esri/themes/light/main.css"
+    />
+    <!-- Load the ArcGIS Maps SDK for JavaScript from CDN -->
+    <script type="module" src="https://js.arcgis.com/5.1/"></script>
+    <link rel="stylesheet" href="CSS/01map.css" />
+
+    <script src="https://kit.fontawesome.com/ffb646cd2a.js"></script>
+  </head>
+  <body>
+    <div id="viewDiv">
+      <div id="queryDiv">
+        <input
+          id="inputField"
+          type="text"
+          value="TRL_NAME = 'Backbone Trail - Musch Trail'"
+        />
+        <button id="queryButton">Query</button>
+      </div>
+    </div>
+    <div id="tableDiv"></div>
+
+    <script type="module">
+      const [Map, MapView] = await $arcgis.import([
+        "@arcgis/core/Map.js",
+        "@arcgis/core/views/MapView.js",
+      ]);
+
+      const FeatureLayer = await $arcgis.import(
+        "@arcgis/core/layers/FeatureLayer.js",
+      );
+
+      const BasemapGallery = await $arcgis.import(
+        "@arcgis/core/widgets/BasemapGallery.js",
+      );
+
+      const Expand = await $arcgis.import("@arcgis/core/widgets/Expand.js");
+
+      const Legend = await $arcgis.import("@arcgis/core/widgets/Legend.js");
+
+      const LayerList = await $arcgis.import(
+        "@arcgis/core/widgets/LayerList.js",
+      );
+
+      const ScaleBar = await $arcgis.import("@arcgis/core/widgets/ScaleBar.js");
+
+      const Query = await $arcgis.import("@arcgis/core/rest/support/Query.js");
+      const intersectsOperator = await $arcgis.import(
+        "@arcgis/core/geometry/operators/intersectsOperator.js",
+      );
+
+      let queriedFeatures = [];
+
+      const myMap = new Map({
+        basemap: "topo-vector",
+      });
+
+      const view = new MapView({
+        container: "viewDiv",
+        map: myMap,
+        zoom: 12,
+        center: [-118.805, 34.02], // longitude, latitude
+      });
+
+      // Renderer for the Tailheads layer
+      const trailheadsRenderer = {
+        type: "simple",
+        symbol: {
+          type: "picture-marker",
+          url: "http://static.arcgis.com/images/Symbols/NPS/npsPictograph_0231b.png",
+          width: "18px",
+          height: "18px",
+        },
+      };
+
+      // Define a label for the trailheads
+      const trailheadsLabels = {
+        symbol: {
+          type: "text",
+          color: "#FFFFFF",
+          haloColor: "#5E8D74",
+          haloSize: "2px",
+          font: {
+            size: "12px",
+            family: "Noto Sans",
+            style: "italic",
+            weight: "normal",
+          },
+        },
+
+        labelPlacement: "above-center",
+        labelExpressionInfo: {
+          expression: "$feature.TRL_NAME",
+        },
+      };
+
+      // Define a pop-up for Trailheads
+      const popupTrailheads = {
+        title: "Trailhead - {TRL_NAME}",
+        content:
+          //"<b>City:</b> {CITY_JUR}<br><b>Cross Street:</b> {X_STREET}<br><b>Parking:</b> {PARKING}<br><b>Elevation:</b> {ELEV_FT} ft",
+          "<table><tr><th><b>City</b></th><td>{CITY_JUR}</td></tr><tr><th><b>Cross Street</b></th><td>{X_STREET}</td></tr><tr><th><b>Parking</b></th><td>{PARKING}</td></tr><tr><th><b>Elevation</b></th><td>{ELEV_FT} ft</td></tr></table>",
+      };
+
+      // Trailheads feature layer (points)
+      const trailheadsLayer = new FeatureLayer({
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0",
+        renderer: trailheadsRenderer,
+        labelingInfo: [trailheadsLabels],
+        popupTemplate: popupTrailheads,
+      });
+
+      myMap.add(trailheadsLayer);
+
+      //Trails Renderer
+      // Define a unique value renderer and symbols
+      const trailsRenderer = {
+        type: "simple",
+        symbol: {
+          color: "#BA55D3",
+          type: "simple-line",
+          style: "solid",
+        },
+
+        visualVariables: [
+          {
+            type: "size",
+            field: "ELEV_GAIN",
+            minDataValue: 0,
+            maxDataValue: 2300,
+            minSize: "3px",
+            maxSize: "7px",
+          },
+        ],
+      };
+
+      // Trails feature layer (lines)
+      const trailsLayer = new FeatureLayer({
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0",
+        renderer: trailsRenderer,
+        opacity: 0.75,
+      });
+
+      myMap.add(trailsLayer);
+
+      // Render for the parks
+      function createFillSymbol(value, color) {
+        return {
+          value: value,
+          symbol: {
+            color: color,
+            type: "simple-fill",
+            style: "solid",
+            outline: {
+              style: "none",
+            },
+          },
+          label: value,
+        };
+      }
+
+      const openSpacesRenderer = {
+        type: "unique-value",
+        field: "TYPE",
+        uniqueValueInfos: [
+          createFillSymbol("Natural Areas", "#9E559C"),
+          createFillSymbol("Regional Open Space", "#A7C636"),
+          createFillSymbol("Local Park", "#149ECE"),
+          createFillSymbol("Regional Recreation Park", "#ED5151"),
+        ],
+      };
+
+      const parksLayer = new FeatureLayer({
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0",
+        renderer: openSpacesRenderer,
+        opacity: 0.5,
+      });
+
+      myMap.add(parksLayer, 0);
+
+      let basemapGallery = new BasemapGallery({
+        view: view,
+      });
+
+      const basemapGalleryExpand = new Expand({
+        expandIcon: "basemap", // see https://next.gha.afd.arcgis.com/calcite-design-system/icons/
+        expandTooltip: "Expand Basemap Gallery", // optional, defaults to "Expand" for English locale
+        view: view,
+        content: basemapGallery,
+      });
+      view.ui.add(basemapGalleryExpand, "top-right");
+
+      const layerList = new LayerList({
+        view: view,
+      });
+
+      const layerListExpand = new Expand({
+        expandIcon: "layers", // see https://next.gha.afd.arcgis.com/calcite-design-system/icons/
+        expandTooltip: "Expand Layer List", // optional, defaults to "Expand" for English locale
+        view: view,
+        content: layerList,
+      });
+      view.ui.add(layerListExpand, "top-right");
+
+      let legend = new Legend({
+        view: view,
+      });
+
+      const legendExpand = new Expand({
+        expandIcon: "legend", // see https://next.gha.afd.arcgis.com/calcite-design-system/icons/
+        expandTooltip: "Expand Legend", // optional, defaults to "Expand" for English locale
+        view: view,
+        content: legend,
+        expanded: false,
+      });
+
+      view.ui.add(legendExpand, "bottom-right");
+
+      let scaleBar = new ScaleBar({
+        view: view,
+        unit: "non-metric",
+      });
+
+      // Add widget to the bottom left corner of the view
+      view.ui.add(scaleBar, {
+        position: "bottom-left",
+      });
+
+      // STEPS FOR QUERY - PUT ON MAP AND TABLE
+      // 1. Let us make space for the table. Add textfield/button
+      // 2. Find a sample/example for query and get some data in
+      //prettier-ignore
+      document.getElementById("queryButton").addEventListener("click", queryTrailheadsLayer);
+
+      async function queryTrailheadsLayer() {
+        const query = new Query();
+        query.where = document.getElementById("inputField").value;
+        query.returnGeometry = true;
+        query.outFields = ["*"];
+        query.outSpatialReference = { wkid: 4326 };
+
+        const results = await trailheadsLayer.queryFeatures(query);
+        console.log(results.features); // prints the array of features to the console
+        displayResults(results);
+      }
+
+      function displayResults(results) {
+        // Create marker symbol
+        const symbol = {
+          type: "simple-marker",
+          color: [20, 130, 200, 0.5],
+          outline: {
+            color: "white",
+            width: 0.5,
+          },
+          size: 25,
+        };
+
+        for (let i = 0; i < results.features.length; i++) {
+          results.features[i].symbol = symbol;
+        }
+
+        // Create the table
+        let featureTable = "<table>";
+        featureTable = featureTable + "<tr>";
+        featureTable = featureTable + "<th>";
+        featureTable = featureTable + "Zoom";
+        featureTable = featureTable + "</th>";
+
+        for (let i = 0; i < results.fields.length; i++) {
+          //console.log(results.fields[i].name);
+          featureTable = featureTable + "<th>";
+          featureTable = featureTable + results.fields[i].name;
+          featureTable = featureTable + "</th>";
+        }
+
+        featureTable = featureTable + "</tr>";
+        for (let i = 0; i < results.features.length; i++) {
+          featureTable = featureTable + "<tr>";
+          featureTable = featureTable + "<td>";
+          featureTable =
+            featureTable +
+            "<i class='fa-solid fa-magnifying-glass zoom-icon'></i>";
+          featureTable = featureTable + "</td>";
+
+          for (let j = 0; j < results.fields.length; j++) {
+            let currFieldName = results.fields[j].name;
+            let currFieldValue = results.features[i].attributes[currFieldName];
+            featureTable = featureTable + "<td>";
+            featureTable = featureTable + currFieldValue;
+            featureTable = featureTable + "</td>";
+          }
+          featureTable = featureTable + "</tr>";
+        }
+
+        featureTable = featureTable + "</table>";
+
+        document.getElementById("tableDiv").innerHTML = featureTable;
+
+        view.graphics.addMany(results.features);
+      }
+
+      // 3. Features in map
+      // 4. Put that data in table and make table nice
+      // 5. Make feature clickable for zoom there
+
+      // Get trailheads from query in clicked park
+      // 1. User clicks map
+      // 2. The park clicked is exposed
+      // 3. Perform spatial analysis of the clicked park
+      // 4. Show the user which
+
+      view.on("click", async function (event) {
+        // event is the event handle returned after the event fires.
+        console.log(
+          `Lat: ${event.mapPoint.latitude} Lon: ${event.mapPoint.longitude}`,
+        );
+
+        const query = new Query();
+        //query.where = "STATE_NAME = 'Washington'";
+        query.outSpatialReference = { wkid: 4326 };
+        query.returnGeometry = true;
+        //query.outFields = [ "CITY_NAME" ];
+        query.geometry = event.mapPoint;
+        query.spatialRelationship = "intersects";
+
+        const results = await parksLayer.queryFeatures(query);
+        console.log(results.features[0]); // prints the array of features to the console
+
+        let thInPark = [];
+        for (let i = 0; i < queriedFeatures.length; i++) {
+          let currentFeature = queriedFeatures[i];
+          // Returns true if two geometries intersect
+          const isIntersecting = intersectsOperator.execute(
+            currentFeature.geometry,
+            features[0].geometry,
+          );
+          if (isIntersecting) {
+            continue;
+
+            thInPark.push(currentFeature);
+            console.log(currentFeature.attributes.FID);
+          }
+        }
+        console.log(thInPark);
+      });
+    </script>
+  </body>
+</html>

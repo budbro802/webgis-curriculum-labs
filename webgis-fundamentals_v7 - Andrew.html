@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Leaflet Weather API Fetch Example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      crossorigin=""
+    ></script>
+
+    <style>
+      body {
+        margin: 0;
+      }
+
+      #map {
+        height: 100vh;
+        width: 100%;
+      }
+
+      #info {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+        font-family: Arial, sans-serif;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+
+    <div id="info">Temperature: <span id="temperature">loading...</span></div>
+
+    <script>
+      // MAP SETUP
+      const map = L.map("map");
+      let latitude = 33.749;
+      let longitude = -84.388;
+      map.setView([latitude, longitude], 10);
+
+      let bm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      });
+
+      bm.addTo(map);
+
+      // FUNCTION: LOAD WEATHER FROM API
+      async function loadWeather() {
+        let url =
+          "https://api.open-meteo.com/v1/forecast?latitude=" +
+          latitude +
+          "&longitude=" +
+          longitude +
+          "&hourly=temperature_2m,wind_speed_10m&models=ncep_gfs_seamless&timezone=America%2FNew_York&forecast_days=7&temperature_unit=fahrenheit&wind_speed_unit=mph";
+
+        let response = await fetch(url);
+        let data = await response.json();
+
+        // API DATA STRUCTURE
+        let times = data.hourly.time;
+        let temperatures = data.hourly.temperature_2m;
+        let unit = data.hourly_units.temperature_2m;
+        let windSpeed = data.hourly.wind_speed_10m;
+        let wspUnit = data.hourly_units.wind_speed_10m;
+
+        //console.log(windSpeed);
+
+        // SIMPLE VERSION:
+        // CURRENT HOUR VERSION
+        let now = new Date();
+
+        // get current hour (0–23)
+        let currentHour = now.getHours();
+
+        // use current hour as array index
+        let currentTime = times[currentHour];
+
+        let dateObject = new Date(currentTime);
+
+        let formattedDateTime = dateObject.toLocaleString("en-US", {
+          timeZone: "America/New_York",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZoneName: "short",
+        });
+
+        let currentTemperature = temperatures[currentHour];
+        let currentWindSpeed = windSpeed[currentHour];
+
+        document.getElementById("temperature").innerText =
+          currentTemperature + " " + unit;
+
+        let marker = L.marker([latitude, longitude]);
+        marker.addTo(map);
+
+        let popupText = "Atlanta";
+        popupText += "<br>Time: " + formattedDateTime;
+        popupText += "<br>Temperature: " + currentTemperature + " " + unit;
+        popupText += `<br>Wind: ${currentWindSpeed} ${wspUnit}`;
+
+        marker.bindPopup(popupText);
+        marker.openPopup();
+      }
+
+      loadWeather();
+
+      // Exercise:
+      // 1. Change latitude and longitude to another city.
+      // 2. Add the city name to the popup.
+      // 3. Instead of times[0], use another index like times[10]. Christian says to ignore for now
+      // 4. Add wind speed from the API.
+    </script>
+  </body>
+</html>

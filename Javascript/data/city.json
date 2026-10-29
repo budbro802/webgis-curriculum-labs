@@ -1,0 +1,5 @@
+[
+  { "name": "Berlin", "population": 3600000 },
+  { "name": "Hamburg", "population": 1800000 },
+  { "name": "Atlanta", "population": 534000 }
+]

@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Leaflet OOP - Reusable City Object</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <style>
+      body {
+        margin: 0;
+      }
+
+      #map {
+        height: 100vh;
+        width: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+
+    <div
+      style="
+        position: absolute;
+        top: 10px;
+        left: 50px;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+      "
+    >
+      <input id="cityName" placeholder="City name" />
+      <input id="lat" placeholder="Lat" />
+      <input id="lon" placeholder="Lon" />
+      <input id="pop" placeholder="Population" />
+      <button id="addCity">Add City</button>
+    </div>
+
+    <script>
+      // CITY CLASS ###################################
+      class City {
+        constructor(name, lat, lon, pop) {
+          this.name = name;
+          this.lat = lat;
+          this.lon = lon;
+          this.pop = pop;
+        }
+
+        isValidLatLon() {
+          if (
+            this.lat > 90 ||
+            this.lat < -90 ||
+            this.lon > 180 ||
+            this.lon < -180
+          ) {
+            return false;
+          }
+
+          return true;
+        }
+
+        getCityType() {
+          if (this.pop > 3000000) {
+            return "Megacity";
+          } else if (this.pop > 1000000) {
+            return "Large city";
+          } else {
+            return "Small city";
+          }
+        }
+
+        getPopupText() {
+          let popupText = "City: " + this.name;
+          popupText += "<br>Population: " + this.pop;
+          popupText += "<br>Type: " + this.getCityType();
+
+          return popupText;
+        }
+      }
+
+      // MAP SETUP ####################################
+      const mapCenter = [50.5, 10.5];
+      const zoomLevel = 5;
+
+      const map = L.map("map");
+      map.setView(mapCenter, zoomLevel);
+
+      let bm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      });
+      bm.addTo(map);
+
+      // RAW CITY DATA ################################
+      const cities = [
+        ["Berlin", 52.52, 13.405, 4000000],
+        ["Paris", 48.8566, 2.3522, 2100000],
+        ["Rome", 41.9028, 12.4964, 2750000],
+      ];
+
+      // LOOP THROUGH RAW DATA AND CREATE OBJECTS #####
+      for (let i = 0; i < cities.length; i++) {
+        let cityData = cities[i];
+
+        let city = new City(cityData[0], cityData[1], cityData[2], cityData[3]);
+
+        addCityToLeafletMap(city, map);
+      }
+
+      // FUNCTIONS ############################
+      function addCityToLeafletMap(city, map) {
+        if (city.isValidLatLon() === false) {
+          alert(
+            "Your city " +
+              city.name +
+              " is outside of lat lon, we won't add it, please check your data.",
+          );
+          return;
+        }
+
+        let marker = L.marker([city.lat, city.lon]);
+        marker.addTo(map);
+        marker.bindPopup(city.getPopupText());
+      }
+
+      function zoomToLeafletCity(city, map) {
+        // check for city with isValidLatLon()
+        if (city.isValidLatLon() === false) {
+          alert(
+            "The city " +
+              city.name +
+              " has an invalid lat and lon, we are unable to zoom to your desired location, please verify your coordinates.",
+          );
+
+          return false;
+        }
+
+        map.setView([city.lat, city.lon], 5);
+
+        //zoomToLeafletCity;
+        // use e.g. maps setView functionality
+        // https://leafletjs.com/reference.html#map-setview
+      }
+
+      // UI FUNCTION ##################################
+      function clearInputs() {
+        document.getElementById("cityName").value = "";
+        document.getElementById("lat").value = "";
+        document.getElementById("lon").value = "";
+        document.getElementById("pop").value = "";
+      }
+
+      // ADD CITY #####################################
+      document.getElementById("addCity").addEventListener("click", function () {
+        let name = document.getElementById("cityName").value;
+        let lat = Number(document.getElementById("lat").value);
+        let lon = Number(document.getElementById("lon").value);
+        let pop = Number(document.getElementById("pop").value);
+
+        let city = new City(name, lat, lon, pop);
+
+        addCityToLeafletMap(city, map);
+        zoomToLeafletCity(city, map);
+
+        cities.push([name, lat, lon, pop]);
+
+        clearInputs();
+      });
+
+      // Exercise:
+      // Finish the function zoomToLeafletCity so it actually zooms to the city.
+      // It should use:
+      // - maps setView function
+      // - city's lat lon and zoom level you define
+    </script>
+  </body>
+</html>

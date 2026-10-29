@@ -1,0 +1,77 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Altanta",
+        "population": 549615,
+        "country": "Georgia, United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-84.388, 33.749]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Omaha",
+        "population": 488797,
+        "country": "Nebraska, United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-95.934, 41.2565]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Chicago",
+        "population": 2731585,
+        "country": "Illinois, United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-87.6298, 41.8781]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Washington, D.C.",
+        "population": 693645,
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-77.0369, 38.9072]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Miami",
+        "population": 499943,
+        "country": "Florida, United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-80.1918, 25.7617]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "New York City",
+        "population": 8584629,
+        "country": "New York, United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-74.006, 40.7128]
+      }
+    }
+  ]
+}

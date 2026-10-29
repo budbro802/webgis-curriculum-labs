@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Leaflet Fundamentals - Cities from Array</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <style>
+      body {
+        margin: 0;
+      }
+
+      #map {
+        height: 100vh;
+        width: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <div
+      style="
+        position: absolute;
+        top: 10px;
+        left: 50px;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+      "
+    >
+      <input id="cityName" placeholder="City name" />
+      <input id="lat" placeholder="Lat" />
+      <input id="lon" placeholder="Lon" />
+      <input id="pop" placeholder="Population" />
+      <button id="addCity">Add City</button>
+    </div>
+
+    <script>
+      // VARIABLES
+      const mapCenter = [50.5, 10.5];
+      const zoomLevel = 5;
+
+      // CREATE MAP
+      const map = L.map("map");
+      map.setView(mapCenter, zoomLevel);
+
+      // BASEMAP
+      let bm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      });
+      bm.addTo(map);
+
+      // ARRAY WITH CITY DATA
+      // [name, latitude, longitude]
+      const cities = [
+        ["Berlin", 52.52, 13.405, 4000000],
+        ["Paris", 48.8566, 2.3522, 2100000],
+        ["Rome", 41.9028, 12.4964, 2750000],
+      ];
+
+      // SHOW ALL CITIES WITH A LOOP
+      for (let i = 0; i < cities.length; i++) {
+        let name = cities[i][0];
+        let lat = cities[i][1];
+        let lon = cities[i][2];
+        let pop = cities[i][3];
+
+        //lat lon check if wrong simply alert and continue
+
+        let marker = L.marker([lat, lon]);
+        marker.addTo(map);
+
+        let cityType = "";
+
+        if (pop > 3000000) {
+          cityType = "Megacity";
+        } else if (pop > 1000000) {
+          cityType = "Large city";
+        } else {
+          cityType = "Small city";
+        }
+
+        let popupText = "City: " + name;
+        popupText = popupText + "<br>Population: " + pop;
+        popupText = popupText + "<br>Type: " + cityType;
+
+        marker.bindPopup(popupText);
+      }
+
+      //---------------------------------------
+      // ADD CITY
+      document.getElementById("addCity").addEventListener("click", function () {
+        let name = document.getElementById("cityName").value;
+        let lat = Number(document.getElementById("lat").value);
+        let lon = Number(document.getElementById("lon").value);
+        let pop = Number(document.getElementById("pop").value);
+
+        cities.push([name, lat, lon, pop]);
+
+        let marker = L.marker([lat, lon]);
+        marker.addTo(map);
+
+        let cityType = "";
+        if (pop > 3000000) {
+          cityType = "Megacity";
+        } else if (pop > 1000000) {
+          cityType = "Large city";
+        } else {
+          cityType = "Small city";
+        }
+
+        let popupText = "City: " + name;
+        popupText = popupText + "<br>Population: " + pop;
+        popupText = popupText + "<br>Type: " + cityType;
+
+        marker.bindPopup(popupText);
+      });
+
+      // Exercise:
+      // Check if latitude and longitude are valid before adding the marker.
+      // A latitude can only be between -90 and 90.
+      // A longitude can only be between -180 and 180.
+      // If the user enters wrong coordinates, the marker may appear
+      // in a wrong place or the map may not behave as expected.
+      //
+      // Your task:
+      // Before adding the city to the array and map,
+      // check if lat and lon are inside the correct ranges.
+      // If not, show an alert and stop the code.
+    </script>
+  </body>
+</html>

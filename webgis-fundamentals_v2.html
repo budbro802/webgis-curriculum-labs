@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Leaflet Fundamentals - Cities from Array</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <style>
+        body {
+            margin: 0;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div style="position:absolute; top:10px; left:50px; z-index:1000; background:white; padding:10px;">
+        <input id="cityName" placeholder="City name">
+        <input id="lat" placeholder="Lat">
+        <input id="lon" placeholder="Lon">
+        <button id="addCity">Add City</button>
+    </div>
+
+    <script>
+        // VARIABLES
+        const mapCenter = [50.5, 10.5];
+        const zoomLevel = 5;
+
+        // CREATE MAP
+        const map = L.map("map");
+        map.setView(mapCenter, zoomLevel);
+
+        // BASEMAP
+        let bm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "&copy; OpenStreetMap contributors"
+        });
+        bm.addTo(map);
+
+        // ARRAY WITH CITY DATA
+        // [name, latitude, longitude]
+        const cities = [
+            ["Berlin", 52.52, 13.405, 4000000],
+            ["Paris", 48.8566, 2.3522, 2100000],
+            ["Rome", 41.9028, 12.4964, 2750000]
+        ];
+
+        let m1 = L.marker([cities[0][1], cities[0][2]]);
+        m1.addTo(map);
+        let popupText = "City: " + cities[0][0];
+        popupText = popupText + "<br>Population: " + cities[0][3];
+        m1.bindPopup(popupText);
+
+        let m2 = L.marker([cities[1][1], cities[1][2]]);
+        m2.addTo(map);
+        popupText = "City: " + cities[1][0];
+        m2.bindPopup(popupText);
+
+        let m3 = L.marker([cities[2][1], cities[2][2]]);
+        m3.addTo(map);
+        popupText = "<b>City:</b> " + cities[2][0];
+        m3.bindPopup(popupText);
+
+        // Exercise:
+        // Change the popups so they also shows a number,
+        // for example population and, bonus, write population in next line
+        // of the popup
+        // Hint: use html e.g. <br>
+
+        //---------------------------------------
+        // ADD CITY
+        document.getElementById("addCity").addEventListener("click", function () {
+
+            let name = document.getElementById("cityName").value;
+            let lat = Number(document.getElementById("lat").value);
+            let lon = Number(document.getElementById("lon").value);
+
+            // add to array
+            cities.push([name, lat, lon]);
+            alert(cities.length);
+
+            // show on map
+            let marker = L.marker([lat, lon]);
+            marker.addTo(map);
+            marker.bindPopup("City: " + name);
+        });
+
+    </script>
+</body>
+
+</html>
